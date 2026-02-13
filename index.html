@@ -10,14 +10,14 @@
             --card-color: #e6e6e6;
             --header-bg: #000;
             --header-text: #fff;
+            --accent: #4a90e2;
         }
 
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg-color);
-            overflow-x: hidden;
             min-height: 100vh;
         }
 
@@ -33,9 +33,9 @@
             z-index: 100;
         }
 
-        .container { padding: 15px; padding-bottom: 120px; }
+        .container { padding: 15px; padding-bottom: 150px; }
 
-        /* Widok 1: Siatka 8 kwadratów */
+        /* Widok 1: Siatka */
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -45,14 +45,25 @@
         .phone-card {
             background-color: var(--card-color);
             border-radius: 20px;
-            aspect-ratio: 1/1;
+            height: 160px; /* Stała wysokość zapobiega rozsuwaniu */
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid transparent;
+            transition: border-color 0.3s;
         }
 
-        .phone-card img { width: 75%; height: auto; object-fit: contain; }
+        .phone-card.selected {
+            border-color: var(--accent);
+        }
+
+        .phone-card img {
+            max-width: 85%;
+            max-height: 85%;
+            object-fit: contain; /* Zdjęcie zawsze mieści się w środku */
+        }
 
         /* Widok 2: Koszyk */
         #cart-view { display: none; }
@@ -60,7 +71,7 @@
         .cart-title {
             font-size: 32px;
             font-weight: 800;
-            margin: 10px 0 25px 5px;
+            margin: 10px 0 25px 0;
         }
 
         .cart-item {
@@ -75,7 +86,6 @@
 
         .cart-item img { width: 100px; height: 100px; object-fit: contain; }
 
-        /* Większe przyciski + / 1 / - */
         .controls {
             display: flex;
             align-items: center;
@@ -86,52 +96,50 @@
             background: #fff;
             border: none;
             border-radius: 12px;
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        .qty-val { font-size: 26px; font-weight: bold; min-width: 20px; text-align: center; }
+        .qty-val { font-size: 30px; font-weight: bold; min-width: 30px; text-align: center; }
 
-        /* Ciężarówka na dole */
+        /* Ciężarówka */
         #truck-container {
             position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 200;
-            transition: transform 0.2s;
         }
-        #truck-container:active { transform: translateX(-50%) scale(0.9); }
-        #truck-container img { width: 120px; }
+        #truck-container img { width: 130px; }
 
-        /* Overlay z blurem (na stałe po kliknięciu) */
+        /* Overlay */
         #overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             z-index: 500;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            text-align: center;
         }
 
         #overlay h1 {
-            font-size: 40px;
+            font-size: 45px;
+            line-height: 1.2;
             color: #000;
-            text-align: center;
-            padding: 20px;
-            z-index: 501;
+            margin: 0;
         }
 
-        /* Konfetti */
         .confetti {
             position: fixed;
             width: 12px;
@@ -142,10 +150,7 @@
         }
 
         @keyframes fall {
-            to {
-                transform: translate(var(--x), var(--y)) rotate(720deg);
-                opacity: 0;
-            }
+            to { transform: translate(var(--x), var(--y)) rotate(720deg); opacity: 0; }
         }
     </style>
 </head>
@@ -160,14 +165,13 @@
 <div class="container" id="cart-view">
     <div class="cart-title">Cart</div>
     <div id="cart-content"></div>
-
     <div id="truck-container" onclick="handleTruckClick()">
         <img src="truck.png" alt="Truck">
     </div>
 </div>
 
 <div id="overlay">
-    <h1>SMB<br> Phone Packages</h1>
+    <h1>SMB<br>Phone Packages</h1>
 </div>
 
 <script>
@@ -177,28 +181,33 @@
     const cartContent = document.getElementById('cart-content');
     const overlay = document.getElementById('overlay');
 
-    // 1. Generowanie 8 kwadratów
+    let selectedPhones = [];
+
+    // Generowanie 8 kwadratów
     for (let i = 1; i <= 8; i++) {
         const card = document.createElement('div');
         card.className = 'phone-card';
         card.innerHTML = `<img src="tel${i}.png" alt="Phone ${i}">`;
-        card.onclick = () => openCart(i);
+        card.onclick = () => selectPhone(i, card);
         grid.appendChild(card);
     }
 
-    function openCart(selectedId) {
+    function selectPhone(id, element) {
+        if (selectedPhones.includes(id)) return;
+
+        selectedPhones.push(id);
+        element.classList.add('selected');
+
+        if (selectedPhones.length === 2) {
+            setTimeout(openCart, 300);
+        }
+    }
+
+    function openCart() {
         mainView.style.display = 'none';
         cartView.style.display = 'block';
 
-        let randomId;
-        do {
-            randomId = Math.floor(Math.random() * 8) + 1;
-        } while (randomId === selectedId);
-
-        cartContent.innerHTML = `
-            ${createCartItem(`tel${randomId}.png`)}
-            ${createCartItem(`tel${selectedId}.png`)}
-        `;
+        cartContent.innerHTML = selectedPhones.map(id => createCartItem(`tel${id}.png`)).join('');
     }
 
     function createCartItem(imgSrc) {
@@ -206,9 +215,9 @@
             <div class="cart-item">
                 <img src="${imgSrc}">
                 <div class="controls">
-                    <div class="btn-qty">-</div>
+                    <button class="btn-qty" onclick="this.nextElementSibling.innerText = Math.max(0, parseInt(this.nextElementSibling.innerText)-1)">-</button>
                     <span class="qty-val">1</span>
-                    <div class="btn-qty">+</div>
+                    <button class="btn-qty" onclick="this.previousElementSibling.innerText = parseInt(this.previousElementSibling.innerText)+1">+</button>
                 </div>
             </div>
         `;
@@ -216,25 +225,22 @@
 
     function handleTruckClick() {
         overlay.style.display = 'flex';
-        // Konfetti z lewej i prawej strony
-        launchSideConfetti(0); // lewa
-        launchSideConfetti(window.innerWidth); // prawa
+        // Strzał z lewej
+        launchSideConfetti(0, 1);
+        // Strzał z prawej
+        launchSideConfetti(window.innerWidth, -1);
     }
 
-    function launchSideConfetti(startX) {
-        const centerY = window.innerHeight / 2;
-
-        for (let i = 0; i < 50; i++) {
+    function launchSideConfetti(startX, direction) {
+        for (let i = 0; i < 60; i++) {
             const c = document.createElement("div");
             c.className = "confetti";
             c.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
             c.style.left = startX + "px";
-            c.style.top = centerY + "px";
+            c.style.top = (Math.random() * window.innerHeight) + "px";
 
-            // Kierunek: jeśli startX to 0, leć w prawo. Jeśli startX to szerokość ekranu, leć w lewo.
-            const direction = startX === 0 ? 1 : -1;
-            const spreadX = (Math.random() * 300 + 50) * direction;
-            const spreadY = (Math.random() - 0.5) * 600;
+            const spreadX = (Math.random() * 400 + 100) * direction;
+            const spreadY = (Math.random() - 0.5) * 400;
 
             c.style.setProperty("--x", `${spreadX}px`);
             c.style.setProperty("--y", `${spreadY}px`);
