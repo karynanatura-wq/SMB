@@ -1,1 +1,249 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Packages</title>
+    <style>
+        :root {
+            --bg-color: #d1d1d1;
+            --card-color: #e6e6e6;
+            --header-bg: #000;
+            --header-text: #fff;
+        }
 
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            color: var(--header-text);
+            text-align: center;
+            padding: 18px 0;
+            font-size: 22px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container { padding: 15px; padding-bottom: 120px; }
+
+        /* Widok 1: Siatka 8 kwadratów */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .phone-card {
+            background-color: var(--card-color);
+            border-radius: 20px;
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .phone-card img { width: 75%; height: auto; object-fit: contain; }
+
+        /* Widok 2: Koszyk */
+        #cart-view { display: none; }
+
+        .cart-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 10px 0 25px 5px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            background: var(--card-color);
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 25px;
+            justify-content: space-between;
+        }
+
+        .cart-item img { width: 100px; height: 100px; object-fit: contain; }
+
+        /* Większe przyciski + / 1 / - */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-qty {
+            background: #fff;
+            border: none;
+            border-radius: 12px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .qty-val { font-size: 26px; font-weight: bold; min-width: 20px; text-align: center; }
+
+        /* Ciężarówka na dole */
+        #truck-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            transition: transform 0.2s;
+        }
+        #truck-container:active { transform: translateX(-50%) scale(0.9); }
+        #truck-container img { width: 120px; }
+
+        /* Overlay z blurem (na stałe po kliknięciu) */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #overlay h1 {
+            font-size: 40px;
+            color: #000;
+            text-align: center;
+            padding: 20px;
+            z-index: 501;
+        }
+
+        /* Konfetti */
+        .confetti {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            z-index: 600;
+            pointer-events: none;
+            animation: fall 4s ease-out forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translate(var(--x), var(--y)) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>Phone Packages</header>
+
+<div class="container" id="main-view">
+    <div class="grid" id="phone-grid"></div>
+</div>
+
+<div class="container" id="cart-view">
+    <div class="cart-title">Cart</div>
+    <div id="cart-content"></div>
+
+    <div id="truck-container" onclick="handleTruckClick()">
+        <img src="truck.png" alt="Truck">
+    </div>
+</div>
+
+<div id="overlay">
+    <h1>SMB<br> Phone Packages</h1>
+</div>
+
+<script>
+    const grid = document.getElementById('phone-grid');
+    const mainView = document.getElementById('main-view');
+    const cartView = document.getElementById('cart-view');
+    const cartContent = document.getElementById('cart-content');
+    const overlay = document.getElementById('overlay');
+
+    // 1. Generowanie 8 kwadratów
+    for (let i = 1; i <= 8; i++) {
+        const card = document.createElement('div');
+        card.className = 'phone-card';
+        card.innerHTML = `<img src="tel${i}.png" alt="Phone ${i}">`;
+        card.onclick = () => openCart(i);
+        grid.appendChild(card);
+    }
+
+    function openCart(selectedId) {
+        mainView.style.display = 'none';
+        cartView.style.display = 'block';
+
+        let randomId;
+        do {
+            randomId = Math.floor(Math.random() * 8) + 1;
+        } while (randomId === selectedId);
+
+        cartContent.innerHTML = `
+            ${createCartItem(`tel${randomId}.png`)}
+            ${createCartItem(`tel${selectedId}.png`)}
+        `;
+    }
+
+    function createCartItem(imgSrc) {
+        return `
+            <div class="cart-item">
+                <img src="${imgSrc}">
+                <div class="controls">
+                    <div class="btn-qty">-</div>
+                    <span class="qty-val">1</span>
+                    <div class="btn-qty">+</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function handleTruckClick() {
+        overlay.style.display = 'flex';
+        // Konfetti z lewej i prawej strony
+        launchSideConfetti(0); // lewa
+        launchSideConfetti(window.innerWidth); // prawa
+    }
+
+    function launchSideConfetti(startX) {
+        const centerY = window.innerHeight / 2;
+
+        for (let i = 0; i < 50; i++) {
+            const c = document.createElement("div");
+            c.className = "confetti";
+            c.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            c.style.left = startX + "px";
+            c.style.top = centerY + "px";
+
+            // Kierunek: jeśli startX to 0, leć w prawo. Jeśli startX to szerokość ekranu, leć w lewo.
+            const direction = startX === 0 ? 1 : -1;
+            const spreadX = (Math.random() * 300 + 50) * direction;
+            const spreadY = (Math.random() - 0.5) * 600;
+
+            c.style.setProperty("--x", `${spreadX}px`);
+            c.style.setProperty("--y", `${spreadY}px`);
+
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 4000);
+        }
+    }
+</script>
+
+</body>
+</html>
